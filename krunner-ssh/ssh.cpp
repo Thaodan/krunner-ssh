@@ -66,7 +66,7 @@ public:
 		QMutexLocker _ml(&mutex);
 		QDir dir(sshdir);
 
-		QString config_path = dir.filePath("config");
+		QString config_path = dir.filePath("known_hosts");
 
 		if (list && lastChecked >= QFileInfo(config_path).lastModified()) {
 			return;
@@ -92,15 +92,13 @@ public:
 				continue;
 			}
 
-			if (line.startsWith("host ", Qt::CaseInsensitive)) {
+                        QString hostnamelong = line.section(" ",0,0);
+                        QString hostname = hostnamelong.section(",",0,0);
 
-				QString hostname = line.mid(5).trimmed();
+                        SSHHost host;
+                        host.name = hostname;
 
-				SSHHost host;
-				host.name = hostname;
-
-				(*list) << host;
-			}
+                        (*list) << host;
 		}
 
 		config.close();
@@ -188,10 +186,9 @@ void SSHRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMat
 
 	QString command = QString("ssh %1").arg(host);
 
-
         KConfigGroup config(KSharedConfig::openConfig(QStringLiteral("kdeglobals")), "General");
         QString terminal = config.readPathEntry("TerminalApplication",QStringLiteral("konsole"));
-	QString konsole_command = QString(terminal+" -e %1").arg(command);
+	QString konsole_command = QString(terminal+" -e \"%1\"").arg(command);
 
 	KRun::runCommand(konsole_command, 0);
 }
