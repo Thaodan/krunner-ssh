@@ -42,6 +42,10 @@
 struct SSHHost
 {
 	QString name;
+	bool operator== (const SSHHost &b) const
+        {
+            return (name == b.name);
+        }
 };
 
 class SSHConfigReader
@@ -67,8 +71,10 @@ public:
 		QDir dir(sshdir);
 
 		QString config_path = dir.filePath("config");
+		QString knownhosts_path = dir.filePath("known_hosts");
 
-		if (list && lastChecked >= QFileInfo(config_path).lastModified()) {
+		if (list && lastChecked >= QFileInfo(config_path).lastModified() &&
+		            lastChecked >= QFileInfo(knownhosts_path).lastModified()) {
 			return;
 		}
 
@@ -77,33 +83,62 @@ public:
 		list = new QList<SSHHost>;
 
 		QFile config(config_path);
-		if (!config.open(QIODevice::ReadOnly)) {
-			return;
-		}
+		if (config.open(QIODevice::ReadOnly)) {
 
-		QTextStream stream(&config);
-		stream.setCodec("UTF-8");
+                        QTextStream stream(&config);
+                        stream.setCodec("UTF-8");
 
-		while (!stream.atEnd()) {
-			QString line = stream.readLine();
+                        while (!stream.atEnd()) {
+                                QString line = stream.readLine();
 
-			line = line.trimmed();
-			if (line.isEmpty()) {
-				continue;
-			}
+                                line = line.trimmed();
+                                if (line.isEmpty()) {
+                                        continue;
+                                }
 
-			if (line.startsWith("host ", Qt::CaseInsensitive)) {
+                                if (line.startsWith("host ", Qt::CaseInsensitive)) {
 
-				QString hostname = line.mid(5).trimmed();
+                                        QString hostname = line.mid(5).trimmed();
 
-				SSHHost host;
-				host.name = hostname;
+                                        SSHHost host;
+                                        host.name = hostname;
 
-				(*list) << host;
-			}
-		}
+                                        if (!list->contains(host)) {
+                                                (*list) << host;
+                                        }
+                                }
+                        }
 
-		config.close();
+                        config.close();
+                }
+
+		QFile knownhosts(knownhosts_path);
+		if (knownhosts.open(QIODevice::ReadOnly)) {
+
+                        QTextStream stream(&knownhosts);
+                        stream.setCodec("UTF-8");
+
+                        while (!stream.atEnd()) {
+                                QString line = stream.readLine();
+
+                                line = line.trimmed();
+                                if (line.isEmpty()) {
+                                        continue;
+                                }
+
+                                QString hostnameandIP = line.section(" ",0,0);
+                                QString hostname = hostnameandIP.section(",",0,0);
+
+                                SSHHost host;
+                                host.name = hostname;
+
+                                if (!list->contains(host)) {
+                                        (*list) << host;
+                                }
+                        }
+
+                        knownhosts.close();
+                }
 
 		lastChecked = QDateTime::currentDateTime();
 
@@ -188,10 +223,9 @@ void SSHRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMat
 
 	QString command = QString("ssh %1").arg(host);
 
-
         KConfigGroup config(KSharedConfig::openConfig(QStringLiteral("kdeglobals")), "General");
         QString terminal = config.readPathEntry("TerminalApplication",QStringLiteral("konsole"));
-	QString konsole_command = QString(terminal+" -e %1").arg(command);
+	QString konsole_command = QString(terminal+" -e \'%1\'").arg(command);
 
 	KRun::runCommand(konsole_command, 0);
 }
