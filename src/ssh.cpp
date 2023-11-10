@@ -128,8 +128,12 @@ public:
     }
 };
 
-KRunnerSSH::KRunnerSSH(QObject *parent, const QVariantList &args)
-    : Plasma::AbstractRunner(parent, args)
+KRunnerSSH::KRunnerSSH(QObject *parent,
+#if KRUNNER_VERSION >= QT_VERSION_CHECK(5, 77, 0)
+                       const KPluginMetaData &metaData,
+#endif
+                       const QVariantList &args)
+    : Plasma::AbstractRunner(parent, metaData, args)
     , rd(0)
 {
     mIcon = QIcon::fromTheme("utilities-terminal");

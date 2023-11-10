@@ -21,14 +21,19 @@
 #define SSHRUNNER_H
 
 #include <KRunner/AbstractRunner>
+#include <krunner_version.h>
 
 class SSHConfigReader;
 
 class KRunnerSSH : public Plasma::AbstractRunner
 {
 public:
-    KRunnerSSH(QObject *parent, const QVariantList &args);
-    ~KRunnerSSH();
+    KRunnerSSH(QObject *parent,
+#if KRUNNER_VERSION >= QT_VERSION_CHECK(5, 77, 0)
+               const KPluginMetaData &metadata,
+#endif
+               const QVariantList &args);
+    ~KRunnerSSH() override;
     QIcon mIcon;
 
     void match(Plasma::RunnerContext &context) override;
