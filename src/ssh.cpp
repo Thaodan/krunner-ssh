@@ -33,6 +33,12 @@
 #include <KLocalizedString>
 #include <KSharedConfig>
 #include <KShell>
+#include <kio_version.h>
+#if KIO_VERSION >= QT_VERSION_CHECK(5, 71, 0)
+#include <KIO/CommandLauncherJob>
+#include <KJobUiDelegate>
+#include <KMessageBox>
+#endif
 #include <krun.h>
 
 #include <iostream>
@@ -205,7 +211,16 @@ void KRunnerSSH::run(const Plasma::RunnerContext &context, const Plasma::QueryMa
     QString terminal = config.readPathEntry("TerminalApplication", QStringLiteral("konsole"));
     QString konsole_command = QString(terminal + " -e %1").arg(command);
 
+#if KIO_VERSION >= QT_VERSION_CHECK(5, 69, 0)
+    auto job = new KIO::CommandLauncherJob(konsole_command);
+    connect(job, &KJob::finished, this, [this, command](KJob *job) {
+        if (job->error())
+            KMessageBox::error(nullptr, i18n("Failed to launch command: %1").arg(command), i18n("Failed to lanch"));
+    });
+    job->start();
+#else
     KRun::runCommand(konsole_command, 0);
+#endif
 }
 
 bool KRunnerSSH::isRunning(const QString name)
