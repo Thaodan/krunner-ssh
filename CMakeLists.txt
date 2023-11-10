@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-project(SSHRunners)
+project(KrunnerSSH)
 
 set( QT_USE_QTXML True )
 
@@ -18,5 +18,4 @@ include(KDECMakeSettings)
 include(KDECompilerSettings)
 
 
-add_subdirectory(krunner-ssh)
-
+add_subdirectory(src)

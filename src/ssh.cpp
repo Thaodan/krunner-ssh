@@ -117,19 +117,19 @@ public:
 	}
 };
 
-SSHRunner::SSHRunner(QObject *parent, const QVariantList& args) : Plasma::AbstractRunner(parent, args), rd( 0 ) {
+KRunnerSSH::KRunnerSSH(QObject *parent, const QVariantList& args) : Plasma::AbstractRunner(parent, args), rd( 0 ) {
 	mIcon = QIcon::fromTheme("utilities-terminal");
 	rd = new SSHConfigReader;
 	setObjectName("SSH Host runner");
 	setSpeed(AbstractRunner::SlowSpeed);
 }
 
-SSHRunner::~SSHRunner() {
+KRunnerSSH::~KRunnerSSH() {
 	if(rd) delete rd;
 	rd = 0;
 }
 
-Plasma::QueryMatch SSHRunner::constructMatch(QString host, Plasma::QueryMatch::Type priority) {
+Plasma::QueryMatch KRunnerSSH::constructMatch(QString host, Plasma::QueryMatch::Type priority) {
 	Plasma::QueryMatch match(this);
 	match.setText(QString("SSH to host %1").arg(host));
 	match.setType(priority);
@@ -138,7 +138,7 @@ Plasma::QueryMatch SSHRunner::constructMatch(QString host, Plasma::QueryMatch::T
 	return match;
 }
 
-void SSHRunner::match(Plasma::RunnerContext &context) {
+void KRunnerSSH::match(Plasma::RunnerContext &context) {
 	QString request = context.query();
 
 	bool startsWithSSH = false;
@@ -180,7 +180,7 @@ void SSHRunner::match(Plasma::RunnerContext &context) {
 	context.addMatches(matches);
 }
 
-void SSHRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match) {
+void KRunnerSSH::run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match) {
 	Q_UNUSED(context);
 
 	QString host = match.data().toString();
@@ -196,13 +196,13 @@ void SSHRunner::run(const Plasma::RunnerContext &context, const Plasma::QueryMat
 	KRun::runCommand(konsole_command, 0);
 }
 
-bool SSHRunner::isRunning(const QString name) {
+bool KRunnerSSH::isRunning(const QString name) {
 	Q_UNUSED(name);
 	// TODO Work out if there is an active connection to a host
 	return false;
 }
 
-QList<QAction*> SSHRunner::actionsForMatch(const Plasma::QueryMatch &match) {
+QList<QAction*> KRunnerSSH::actionsForMatch(const Plasma::QueryMatch &match) {
 	Q_UNUSED(match);
 
 	QList<QAction*> ret;

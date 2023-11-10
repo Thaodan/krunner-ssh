@@ -24,10 +24,10 @@
 
 class SSHConfigReader;
 
-class SSHRunner : public Plasma::AbstractRunner {
+class KRunnerSSH : public Plasma::AbstractRunner {
 	public:
-		SSHRunner(QObject *parent, const QVariantList& args);
-		~SSHRunner();
+		KRunnerSSH(QObject *parent, const QVariantList& args);
+		~KRunnerSSH();
 		QIcon mIcon;
 
 		void match(Plasma::RunnerContext &context);
@@ -40,6 +40,6 @@ class SSHRunner : public Plasma::AbstractRunner {
 		SSHConfigReader *rd;
 };
 
-K_EXPORT_PLASMA_RUNNER(krunner-ssh, SSHRunner)
+K_EXPORT_PLASMA_RUNNER(krunner-ssh, KRunnerSSH)
 
 #endif
