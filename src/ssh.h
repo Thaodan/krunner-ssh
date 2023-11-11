@@ -48,6 +48,4 @@ private:
     QList<QAction *> matchActionList;
 };
 
-K_EXPORT_PLASMA_RUNNER(krunner - ssh, KRunnerSSH)
-
 #endif

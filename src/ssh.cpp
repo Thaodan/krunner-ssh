@@ -242,4 +242,6 @@ bool KRunnerSSH::isRunning(const QString name)
     return false;
 }
 
-#include "moc_ssh.cpp"
+K_PLUGIN_CLASS_WITH_JSON(KRunnerSSH, "KRunnerSSH.json")
+
+#include "ssh.moc"

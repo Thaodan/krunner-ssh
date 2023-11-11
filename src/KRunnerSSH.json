@@ -1,0 +1,21 @@
+{
+    "KPlugin": {
+        "Authors": [
+            {
+                "Email": "heap.tim@gmail.com",
+                "Name": "Tim Heap"
+            }
+        ],
+        "Description": "Start SSH connections",
+        "EnabledByDefault": false,
+        "Icon": "utilities-terminal",
+        "Id": "krunner_ssh",
+        "License": "GPL-3.0",
+        "Name": "SSH runner",
+        "ServiceTypes": [
+            "Plasma/Runner"
+        ],
+        "Version": "0.1.0",
+        "Website": "http://timheap.me/"
+    }
+}
