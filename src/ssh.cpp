@@ -137,7 +137,6 @@ KRunnerSSH::KRunnerSSH(QObject *parent,
     , rd(0)
 {
     rd = new SSHConfigReader;
-    setObjectName("SSH Host runner");
     setSpeed(AbstractRunner::SlowSpeed);
 }
 
