@@ -1,1 +1,6 @@
 build
+compile_commands.json
+.cache
+.clangd
+.clang-format
+.ccls-cache

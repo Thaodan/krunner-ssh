@@ -24,22 +24,23 @@
 
 class SSHConfigReader;
 
-class KRunnerSSH : public Plasma::AbstractRunner {
-	public:
-		KRunnerSSH(QObject *parent, const QVariantList& args);
-		~KRunnerSSH();
-		QIcon mIcon;
+class KRunnerSSH : public Plasma::AbstractRunner
+{
+public:
+    KRunnerSSH(QObject *parent, const QVariantList &args);
+    ~KRunnerSSH();
+    QIcon mIcon;
 
-		void match(Plasma::RunnerContext &context);
-		void run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match);
-		QList<QAction*> actionsForMatch(const Plasma::QueryMatch &match);
+    void match(Plasma::RunnerContext &context) override;
+    void run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match);
+    QList<QAction *> actionsForMatch(const Plasma::QueryMatch &match);
 
-	private:
-		bool isRunning(const QString name);
-		Plasma::QueryMatch constructMatch(QString host, Plasma::QueryMatch::Type priority);
-		SSHConfigReader *rd;
+private:
+    bool isRunning(const QString name);
+    Plasma::QueryMatch constructMatch(QString host, Plasma::QueryMatch::Type priority);
+    SSHConfigReader *rd;
 };
 
-K_EXPORT_PLASMA_RUNNER(krunner-ssh, KRunnerSSH)
+K_EXPORT_PLASMA_RUNNER(krunner - ssh, KRunnerSSH)
 
 #endif

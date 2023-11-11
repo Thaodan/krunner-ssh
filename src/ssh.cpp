@@ -17,202 +17,216 @@
  *   Free Software Foundation, Inc.,
  *   51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA. */
 
+#include <QAction>
 #include <QDir>
 #include <QDomDocument>
 #include <QFile>
-#include <QTextStream>
 #include <QFileInfo>
 #include <QHash>
+#include <QIcon>
 #include <QMutexLocker>
 #include <QProcess>
-#include <QAction>
-#include <QIcon>
+#include <QTextStream>
 
-#include <KLocalizedString>
-#include <krun.h>
-#include <KShell>
 #include <KConfig>
 #include <KConfigGroup>
+#include <KLocalizedString>
 #include <KSharedConfig>
+#include <KShell>
+#include <krun.h>
 
 #include <iostream>
 
 #include "ssh.h"
 
-struct SSHHost
-{
-	QString name;
+struct SSHHost {
+    QString name;
 };
 
 class SSHConfigReader
 {
-	QList< SSHHost > *list;
-	QDateTime lastChecked;
-	QMutex mutex;
+    QList<SSHHost> *list;
+    QDateTime lastChecked;
+    QMutex mutex;
 
-	QString sshdir;
+    QString sshdir;
+
 public:
-	SSHConfigReader() : list(0) {
-		sshdir = QString(QDir::home().filePath(".ssh"));
-	}
+    SSHConfigReader()
+        : list(0)
+    {
+        sshdir = QString(QDir::home().filePath(".ssh"));
+    }
 
-	~SSHConfigReader() {
-		if( list ) delete list;
-		list = 0;
-	}
+    ~SSHConfigReader()
+    {
+        if (list)
+            delete list;
+        list = 0;
+    }
 
-	void updateAsNeccessary() {
+    void updateAsNeccessary()
+    {
+        QMutexLocker _ml(&mutex);
+        QDir dir(sshdir);
 
-		QMutexLocker _ml(&mutex);
-		QDir dir(sshdir);
+        QString config_path = dir.filePath("config");
 
-		QString config_path = dir.filePath("config");
+        if (list && lastChecked >= QFileInfo(config_path).lastModified()) {
+            return;
+        }
 
-		if (list && lastChecked >= QFileInfo(config_path).lastModified()) {
-			return;
-		}
+        if (list)
+            delete list;
 
-		if (list) delete list;
+        list = new QList<SSHHost>;
 
-		list = new QList<SSHHost>;
+        QFile config(config_path);
+        if (!config.open(QIODevice::ReadOnly)) {
+            return;
+        }
 
-		QFile config(config_path);
-		if (!config.open(QIODevice::ReadOnly)) {
-			return;
-		}
+        QTextStream stream(&config);
+        stream.setCodec("UTF-8");
 
-		QTextStream stream(&config);
-		stream.setCodec("UTF-8");
+        while (!stream.atEnd()) {
+            QString line = stream.readLine();
 
-		while (!stream.atEnd()) {
-			QString line = stream.readLine();
+            line = line.trimmed();
+            if (line.isEmpty()) {
+                continue;
+            }
 
-			line = line.trimmed();
-			if (line.isEmpty()) {
-				continue;
-			}
+            if (line.startsWith("host ", Qt::CaseInsensitive)) {
+                QString hostname = line.mid(5).trimmed();
 
-			if (line.startsWith("host ", Qt::CaseInsensitive)) {
+                SSHHost host;
+                host.name = hostname;
 
-				QString hostname = line.mid(5).trimmed();
+                (*list) << host;
+            }
+        }
 
-				SSHHost host;
-				host.name = hostname;
+        config.close();
 
-				(*list) << host;
-			}
-		}
+        lastChecked = QDateTime::currentDateTime();
+    }
 
-		config.close();
+    QList<SSHHost> hosts()
+    {
+        updateAsNeccessary();
+        if (!list)
+            return QList<SSHHost>();
 
-		lastChecked = QDateTime::currentDateTime();
-
-	}
-
-	QList<SSHHost> hosts() {
-		updateAsNeccessary();
-		if (!list) return QList<SSHHost>();
-
-		return *list;
-	}
+        return *list;
+    }
 };
 
-KRunnerSSH::KRunnerSSH(QObject *parent, const QVariantList& args) : Plasma::AbstractRunner(parent, args), rd( 0 ) {
-	mIcon = QIcon::fromTheme("utilities-terminal");
-	rd = new SSHConfigReader;
-	setObjectName("SSH Host runner");
-	setSpeed(AbstractRunner::SlowSpeed);
+KRunnerSSH::KRunnerSSH(QObject *parent, const QVariantList &args)
+    : Plasma::AbstractRunner(parent, args)
+    , rd(0)
+{
+    mIcon = QIcon::fromTheme("utilities-terminal");
+    rd = new SSHConfigReader;
+    setObjectName("SSH Host runner");
+    setSpeed(AbstractRunner::SlowSpeed);
 }
 
-KRunnerSSH::~KRunnerSSH() {
-	if(rd) delete rd;
-	rd = 0;
+KRunnerSSH::~KRunnerSSH()
+{
+    if (rd)
+        delete rd;
+    rd = 0;
 }
 
-Plasma::QueryMatch KRunnerSSH::constructMatch(QString host, Plasma::QueryMatch::Type priority) {
-	Plasma::QueryMatch match(this);
-	match.setText(QString("SSH to host %1").arg(host));
-	match.setType(priority);
-	match.setIcon(mIcon);
-	match.setData(QVariant(host));
-	return match;
+Plasma::QueryMatch KRunnerSSH::constructMatch(QString host, Plasma::QueryMatch::Type priority)
+{
+    Plasma::QueryMatch match(this);
+    match.setText(QString("SSH to host %1").arg(host));
+    match.setType(priority);
+    match.setIcon(mIcon);
+    match.setData(QVariant(host));
+    return match;
 }
 
-void KRunnerSSH::match(Plasma::RunnerContext &context) {
-	QString request = context.query();
+void KRunnerSSH::match(Plasma::RunnerContext &context)
+{
+    QString request = context.query();
 
-	bool startsWithSSH = false;
-	bool exactMatchFound = false;
-	if (request.startsWith("ssh ", Qt::CaseInsensitive)) {
-		request.remove(0, 4);
-		startsWithSSH = true;
-	}
+    bool startsWithSSH = false;
+    bool exactMatchFound = false;
+    if (request.startsWith("ssh ", Qt::CaseInsensitive)) {
+        request.remove(0, 4);
+        startsWithSSH = true;
+    }
 
-	if (request.isEmpty())
-		return;
+    if (request.isEmpty())
+        return;
 
-	QList<Plasma::QueryMatch> matches;
-	foreach(SSHHost h, rd->hosts()) {
-		if (h.name.compare(request, Qt::CaseInsensitive) == 0) {
-			matches << constructMatch(h.name, Plasma::QueryMatch::ExactMatch);
-			exactMatchFound = true;
-		} else if (request.length() > 2) {
-			if (h.name.startsWith(request, Qt::CaseInsensitive)) {
-				matches << constructMatch(h.name, Plasma::QueryMatch::PossibleMatch);
-			} else if (h.name.contains(request, Qt::CaseInsensitive)) {
-				matches << constructMatch(h.name, Plasma::QueryMatch::CompletionMatch);
-			}
-		}
-	}
+    QList<Plasma::QueryMatch> matches;
+    foreach (SSHHost h, rd->hosts()) {
+        if (h.name.compare(request, Qt::CaseInsensitive) == 0) {
+            matches << constructMatch(h.name, Plasma::QueryMatch::ExactMatch);
+            exactMatchFound = true;
+        } else if (request.length() > 2) {
+            if (h.name.startsWith(request, Qt::CaseInsensitive)) {
+                matches << constructMatch(h.name, Plasma::QueryMatch::PossibleMatch);
+            } else if (h.name.contains(request, Qt::CaseInsensitive)) {
+                matches << constructMatch(h.name, Plasma::QueryMatch::CompletionMatch);
+            }
+        }
+    }
 
-	if (startsWithSSH && !exactMatchFound) {
-		Plasma::QueryMatch match(this);
+    if (startsWithSSH && !exactMatchFound) {
+        Plasma::QueryMatch match(this);
 
-		match.setType(Plasma::QueryMatch::CompletionMatch);
+        match.setType(Plasma::QueryMatch::CompletionMatch);
 
-		match.setText(QString("SSH to %1").arg(request));
-		match.setIcon(mIcon);
-		match.setData(QVariant(request));
+        match.setText(QString("SSH to %1").arg(request));
+        match.setIcon(mIcon);
+        match.setData(QVariant(request));
 
-		matches << match;
-	}
+        matches << match;
+    }
 
-	context.addMatches(matches);
+    context.addMatches(matches);
 }
 
-void KRunnerSSH::run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match) {
-	Q_UNUSED(context);
+void KRunnerSSH::run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match)
+{
+    Q_UNUSED(context);
 
-	QString host = match.data().toString();
-	KShell::quoteArg(host);
+    QString host = match.data().toString();
+    KShell::quoteArg(host);
 
-	QString command = QString("ssh %1").arg(host);
+    QString command = QString("ssh %1").arg(host);
 
+    KConfigGroup config(KSharedConfig::openConfig(QStringLiteral("kdeglobals")), "General");
+    QString terminal = config.readPathEntry("TerminalApplication", QStringLiteral("konsole"));
+    QString konsole_command = QString(terminal + " -e %1").arg(command);
 
-        KConfigGroup config(KSharedConfig::openConfig(QStringLiteral("kdeglobals")), "General");
-        QString terminal = config.readPathEntry("TerminalApplication",QStringLiteral("konsole"));
-	QString konsole_command = QString(terminal+" -e %1").arg(command);
-
-	KRun::runCommand(konsole_command, 0);
+    KRun::runCommand(konsole_command, 0);
 }
 
-bool KRunnerSSH::isRunning(const QString name) {
-	Q_UNUSED(name);
-	// TODO Work out if there is an active connection to a host
-	return false;
+bool KRunnerSSH::isRunning(const QString name)
+{
+    Q_UNUSED(name);
+    // TODO Work out if there is an active connection to a host
+    return false;
 }
 
-QList<QAction*> KRunnerSSH::actionsForMatch(const Plasma::QueryMatch &match) {
-	Q_UNUSED(match);
+QList<QAction *> KRunnerSSH::actionsForMatch(const Plasma::QueryMatch &match)
+{
+    Q_UNUSED(match);
 
-	QList<QAction*> ret;
+    QList<QAction *> ret;
 
-	if(!action("ssh")) {
-		(addAction("ssh", mIcon, i18n("SSH to remote host")))->setData("ssh");
-	}
+    if (!action("ssh")) {
+        (addAction("ssh", mIcon, i18n("SSH to remote host")))->setData("ssh");
+    }
 
-	ret << action("ssh");
-	return ret;
+    ret << action("ssh");
+    return ret;
 }
 
 #include "moc_ssh.cpp"
