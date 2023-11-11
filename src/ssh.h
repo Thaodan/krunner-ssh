@@ -34,16 +34,18 @@ public:
 #endif
                const QVariantList &args);
     ~KRunnerSSH() override;
-    QIcon mIcon;
 
     void match(Plasma::RunnerContext &context) override;
     void run(const Plasma::RunnerContext &context, const Plasma::QueryMatch &match) override;
-    QList<QAction *> actionsForMatch(const Plasma::QueryMatch &match) override;
+
+protected:
+    void init() override;
 
 private:
     bool isRunning(const QString name);
     Plasma::QueryMatch constructMatch(QString host, Plasma::QueryMatch::Type priority);
     SSHConfigReader *rd;
+    QList<QAction *> matchActionList;
 };
 
 K_EXPORT_PLASMA_RUNNER(krunner - ssh, KRunnerSSH)

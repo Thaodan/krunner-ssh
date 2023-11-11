@@ -136,7 +136,6 @@ KRunnerSSH::KRunnerSSH(QObject *parent,
     : Plasma::AbstractRunner(parent, metaData, args)
     , rd(0)
 {
-    mIcon = QIcon::fromTheme("utilities-terminal");
     rd = new SSHConfigReader;
     setObjectName("SSH Host runner");
     setSpeed(AbstractRunner::SlowSpeed);
@@ -149,12 +148,20 @@ KRunnerSSH::~KRunnerSSH()
     rd = 0;
 }
 
+void KRunnerSSH::init()
+{
+    auto action = new QAction(QIcon::fromTheme("utilities-terminal"), i18n("SSH to remote host"));
+    action->setData("ssh");
+
+    matchActionList << action;
+}
+
 Plasma::QueryMatch KRunnerSSH::constructMatch(QString host, Plasma::QueryMatch::Type priority)
 {
     Plasma::QueryMatch match(this);
     match.setText(QString("SSH to host %1").arg(host));
     match.setType(priority);
-    match.setIcon(mIcon);
+    match.setIcon(QIcon::fromTheme("utilities-terminal"));
     match.setData(QVariant(host));
     return match;
 }
@@ -193,8 +200,9 @@ void KRunnerSSH::match(Plasma::RunnerContext &context)
         match.setType(Plasma::QueryMatch::CompletionMatch);
 
         match.setText(QString("SSH to %1").arg(request));
-        match.setIcon(mIcon);
+        match.setIcon(QIcon::fromTheme("utilities-terminal"));
         match.setData(QVariant(request));
+        match.setActions(matchActionList);
 
         matches << match;
     }
@@ -232,20 +240,6 @@ bool KRunnerSSH::isRunning(const QString name)
     Q_UNUSED(name);
     // TODO Work out if there is an active connection to a host
     return false;
-}
-
-QList<QAction *> KRunnerSSH::actionsForMatch(const Plasma::QueryMatch &match)
-{
-    Q_UNUSED(match);
-
-    QList<QAction *> ret;
-
-    if (!action("ssh")) {
-        (addAction("ssh", mIcon, i18n("SSH to remote host")))->setData("ssh");
-    }
-
-    ret << action("ssh");
-    return ret;
 }
 
 #include "moc_ssh.cpp"
